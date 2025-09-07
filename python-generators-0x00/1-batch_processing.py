@@ -1,28 +1,29 @@
-#!/usr/bin/python3
-"""
-Batch processing users with generators
-"""
-
-from itertools import islice
-stream_users = __import__('0-stream_users').stream_users
-
+# 1-batch_processing.py
+import mysql.connector
 
 def stream_users_in_batches(batch_size):
-    """
-    Generator that yields users in batches of `batch_size`
-    """
-    users_iterator = stream_users()
+    """Fetch users in batches from MySQL using a generator."""
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="alx",
+        password="_@3G1M56iW1Nn]Lg",
+        database="ALX_prodev"
+    )
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT * FROM user_data")
     while True:
-        batch = list(islice(users_iterator, batch_size))
-        if not batch:
+        rows = cur.fetchmany(batch_size)
+        if not rows:
             break
-        yield batch
+        yield rows
+
+    cur.close()
+    conn.close()
 
 
 def batch_processing(batch_size):
-    """
-    Process each batch to filter users over the age of 25
-    """
+    """Process batches: only yield users older than 25."""
     for batch in stream_users_in_batches(batch_size):
         for user in batch:
             if user["age"] > 25:
