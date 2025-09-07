@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import mysql.connector
 from mysql.connector import errorcode
 import csv
@@ -69,7 +70,7 @@ def insert_data(connection, csv_file):
                 name = row['name']
                 email = row['email']
                 age = row['age']  
-                
+
                 # Check if email exists to prevent duplicates
                 cursor.execute("SELECT user_id FROM user_data WHERE email = %s", (email,))
                 exists = cursor.fetchone()
