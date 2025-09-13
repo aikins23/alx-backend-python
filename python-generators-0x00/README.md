@@ -299,15 +299,13 @@ Average age of users: 54.78
 
 This project is part of the **ALX Software Engineering Program**.
 
-* GitHub: [YourUsername](https://github.com/YourUsername)
+- **GitHub:** [aikins23](https://github.com/aikins23)  
+- **LinkedIn:** [Buabeng Emmanuel Aikins](https://linkedin.com/in/buabeng-emmanuel-aikins-b7a971252)  
 
 ---
 
 ```
 
----
-
-Would you like me to also include the **SQL schema** and **sample `user_data.csv` format** in this README so others can seed the database easily when cloning your repo?
 ```
 
 ---
