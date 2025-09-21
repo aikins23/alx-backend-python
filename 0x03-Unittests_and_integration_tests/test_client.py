@@ -14,8 +14,10 @@ from client import GithubOrgClient
 import fixtures
 
 
-@parameterized_class(('org_payload', 'repos_payload', 'expected_repos', 'apache2_repos'),
-                     fixtures.TEST_PAYLOAD)
+@parameterized_class(
+    ('org_payload', 'repos_payload', 'expected_repos', 'apache2_repos'),
+    fixtures.TEST_PAYLOAD
+)
 class TestIntegrationGithubOrgClient(unittest.TestCase):
     """Integration tests for GithubOrgClient using fixtures."""
 
@@ -25,11 +27,14 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher = patch("requests.get")
         mock_get = cls.get_patcher.start()
 
-        # Mock responses in the order they are called
-        mock_get.side_effect = [
-            MagicMock(json=lambda: cls.org_payload),
-            MagicMock(json=lambda: cls.repos_payload),
-        ]
+        def side_effect(url, *args, **kwargs):
+            if url.endswith("/orgs/google"):
+                return MagicMock(json=lambda: cls.org_payload)
+            if url.endswith("/orgs/google/repos"):
+                return MagicMock(json=lambda: cls.repos_payload)
+            return MagicMock(json=lambda: {})
+
+        mock_get.side_effect = side_effect
 
     @classmethod
     def tearDownClass(cls):
@@ -44,10 +49,8 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
     def test_public_repos_with_license(self):
         """Test filtering repos by license."""
         client = GithubOrgClient("google")
-        self.assertEqual(
-            client.public_repos(license="apache-2.0"),
-            self.apache2_repos
-        )
+        repos = client.public_repos(license="apache-2.0")
+        self.assertEqual(repos, self.apache2_repos)
 
 
 if __name__ == "__main__":
