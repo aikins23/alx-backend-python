@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+"""
+Unittests for utils.py module.
+
+Covers:
+- access_nested_map
+- get_json
+- memoize decorator
+"""
+
 import unittest
 from unittest.mock import patch
 from utils import access_nested_map, get_json, memoize
@@ -46,6 +55,7 @@ class TestMemoize(unittest.TestCase):
     """Tests for memoize decorator."""
 
     def test_memoize(self):
+        """Test that memoize caches result and calls method once."""
         class TestClass:
             def a_method(self):
                 return 42
