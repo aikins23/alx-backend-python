@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Unittests for utils.py module.
+Unittests for the utils module.
 
-Covers:
+This file contains unit tests for:
 - access_nested_map
 - get_json
 - memoize decorator
@@ -14,9 +14,10 @@ from utils import access_nested_map, get_json, memoize
 
 
 class TestAccessNestedMap(unittest.TestCase):
-    """Tests for access_nested_map."""
+    """Unit tests for the access_nested_map function."""
 
     def test_access_nested_map(self):
+        """Test correct access for valid paths."""
         test_cases = [
             ({"a": 1}, ("a",), 1),
             ({"a": {"b": 2}}, ("a",), {"b": 2}),
@@ -27,6 +28,7 @@ class TestAccessNestedMap(unittest.TestCase):
                 self.assertEqual(access_nested_map(nested_map, path), expected)
 
     def test_access_nested_map_exception(self):
+        """Test KeyError is raised for invalid paths."""
         test_cases = [
             ({}, ("a",)),
             ({"a": 1}, ("a", "b")),
@@ -38,10 +40,11 @@ class TestAccessNestedMap(unittest.TestCase):
 
 
 class TestGetJson(unittest.TestCase):
-    """Tests for get_json."""
+    """Unit tests for the get_json function."""
 
     @patch("utils.requests.get")
     def test_get_json(self, mock_get):
+        """Test get_json returns mocked payload."""
         test_payload = {"payload": True}
         mock_get.return_value.json.return_value = test_payload
         url = "http://example.com"
@@ -52,16 +55,20 @@ class TestGetJson(unittest.TestCase):
 
 
 class TestMemoize(unittest.TestCase):
-    """Tests for memoize decorator."""
+    """Unit tests for the memoize decorator."""
 
     def test_memoize(self):
         """Test that memoize caches result and calls method once."""
         class TestClass:
+            """Test helper class for memoize."""
+
             def a_method(self):
+                """Return 42."""
                 return 42
 
             @memoize
             def a_property(self):
+                """Return cached result of a_method."""
                 return self.a_method()
 
         obj = TestClass()
