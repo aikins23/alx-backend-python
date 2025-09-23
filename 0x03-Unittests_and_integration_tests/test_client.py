@@ -1,56 +1,69 @@
 #!/usr/bin/env python3
 """
-Unittests for the client module.
-
-This file contains both unit and integration tests for:
-- GithubOrgClient
+Unit and integration tests for client.py
 """
 
 import unittest
-from unittest.mock import patch, MagicMock
-from parameterized import parameterized_class
+from unittest.mock import patch, PropertyMock
+from parameterized import parameterized
 
 from client import GithubOrgClient
-import fixtures
 
 
-@parameterized_class(
-    ('org_payload', 'repos_payload', 'expected_repos', 'apache2_repos'),
-    fixtures.TEST_PAYLOAD
-)
-class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration tests for GithubOrgClient using fixtures."""
+class TestGithubOrgClient(unittest.TestCase):
+    """Unit tests for GithubOrgClient."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Start patcher for requests.get before tests run."""
-        cls.get_patcher = patch("requests.get")
-        mock_get = cls.get_patcher.start()
+    @parameterized.expand([
+        ("google",),
+        ("abc",),
+    ])
+    @patch("client.get_json")
+    def test_org(self, org_name, mock_get_json):
+        """Test that GithubOrgClient.org returns correct value."""
+        test_payload = {"payload": True}
+        mock_get_json.return_value = test_payload
 
-        def side_effect(url, *args, **kwargs):
-            if url.endswith("/orgs/google"):
-                return MagicMock(json=lambda: cls.org_payload)
-            if url.endswith("/orgs/google/repos"):
-                return MagicMock(json=lambda: cls.repos_payload)
-            return MagicMock(json=lambda: {})
+        client = GithubOrgClient(org_name)
+        self.assertEqual(client.org, test_payload)
+        mock_get_json.assert_called_once_with(
+            f"https://api.github.com/orgs/{org_name}"
+        )
 
-        mock_get.side_effect = side_effect
+    def test_public_repos_url(self):
+        """Test _public_repos_url property uses org payload correctly."""
+        payload = {"repos_url": "https://api.github.com/orgs/google/repos"}
+        with patch.object(GithubOrgClient, "org", new_callable=PropertyMock) \
+                as mock_org:
+            mock_org.return_value = payload
+            client = GithubOrgClient("google")
+            self.assertEqual(client._public_repos_url, payload["repos_url"])
 
-    @classmethod
-    def tearDownClass(cls):
-        """Stop patcher after tests finish."""
-        cls.get_patcher.stop()
+    @patch("client.get_json")
+    def test_public_repos(self, mock_get_json):
+        """Test public_repos returns expected repos list."""
+        test_payload = [{"name": "repo1"}, {"name": "repo2"}]
+        mock_get_json.return_value = test_payload
 
-    def test_public_repos(self):
-        """Test that public_repos returns the expected repo list."""
-        client = GithubOrgClient("google")
-        self.assertEqual(client.public_repos(), self.expected_repos)
+        with patch.object(GithubOrgClient,
+                          "_public_repos_url",
+                          new_callable=PropertyMock) as mock_url:
+            mock_url.return_value = "https://api.github.com/orgs/google/repos"
+            client = GithubOrgClient("google")
+            result = client.public_repos()
+            self.assertEqual(result, ["repo1", "repo2"])
+            mock_url.assert_called_once()
+            mock_get_json.assert_called_once_with(mock_url.return_value)
 
-    def test_public_repos_with_license(self):
-        """Test filtering repos by license."""
-        client = GithubOrgClient("google")
-        repos = client.public_repos(license="apache-2.0")
-        self.assertEqual(repos, self.apache2_repos)
+    @parameterized.expand([
+        ({"license": {"key": "my_license"}}, "my_license", True),
+        ({"license": {"key": "other_license"}}, "my_license", False),
+    ])
+    def test_has_license(self, repo, license_key, expected):
+        """Test has_license correctly checks repo license key."""
+        self.assertEqual(
+            GithubOrgClient.has_license(repo, license_key),
+            expected
+        )
 
 
 if __name__ == "__main__":
