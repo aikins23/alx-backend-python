@@ -1,84 +1,75 @@
 #!/usr/bin/env python3
 """
-Unittests for the utils module.
-
-This file contains unit tests for:
-- access_nested_map
-- get_json
-- memoize decorator
+Unit tests for utils.py
 """
 
 import unittest
-from unittest.mock import patch
+from parameterized import parameterized
+from unittest.mock import patch, Mock
 from utils import access_nested_map, get_json, memoize
 
 
 class TestAccessNestedMap(unittest.TestCase):
-    """Unit tests for the access_nested_map function."""
+    """Tests for access_nested_map function."""
 
-    def test_access_nested_map(self):
-        """Test correct access for valid paths."""
-        test_cases = [
-            ({"a": 1}, ("a",), 1),
-            ({"a": {"b": 2}}, ("a",), {"b": 2}),
-            ({"a": {"b": 2}}, ("a", "b"), 2),
-        ]
-        for nested_map, path, expected in test_cases:
-            with self.subTest(nested_map=nested_map, path=path):
-                self.assertEqual(access_nested_map(nested_map, path), expected)
+    @parameterized.expand([
+        ({"a": 1}, ("a",), 1),
+        ({"a": {"b": 2}}, ("a",), {"b": 2}),
+        ({"a": {"b": 2}}, ("a", "b"), 2),
+    ])
+    def test_access_nested_map(self, nested_map, path, expected):
+        """Test access_nested_map with valid inputs."""
+        self.assertEqual(access_nested_map(nested_map, path), expected)
 
-    def test_access_nested_map_exception(self):
-        """Test KeyError is raised for invalid paths."""
-        test_cases = [
-            ({}, ("a",)),
-            ({"a": 1}, ("a", "b")),
-        ]
-        for nested_map, path in test_cases:
-            with self.subTest(nested_map=nested_map, path=path):
-                with self.assertRaises(KeyError):
-                    access_nested_map(nested_map, path)
+    @parameterized.expand([
+        ({}, ("a",)),
+        ({"a": 1}, ("a", "b")),
+    ])
+    def test_access_nested_map_exception(self, nested_map, path):
+        """Test access_nested_map raises KeyError on invalid paths."""
+        with self.assertRaises(KeyError):
+            access_nested_map(nested_map, path)
 
 
 class TestGetJson(unittest.TestCase):
-    """Unit tests for the get_json function."""
+    """Tests for get_json function."""
 
+    @parameterized.expand([
+        ("http://example.com", {"payload": True}),
+        ("http://holberton.io", {"payload": False}),
+    ])
     @patch("utils.requests.get")
-    def test_get_json(self, mock_get):
-        """Test get_json returns mocked payload."""
-        test_payload = {"payload": True}
+    def test_get_json(self, test_url, test_payload, mock_get):
+        """Test get_json returns expected result with mocked requests.get."""
+        mock_get.return_value = Mock()
         mock_get.return_value.json.return_value = test_payload
-        url = "http://example.com"
 
-        result = get_json(url)
+        result = get_json(test_url)
         self.assertEqual(result, test_payload)
-        mock_get.assert_called_once_with(url)
+        mock_get.assert_called_once_with(test_url)
 
 
 class TestMemoize(unittest.TestCase):
-    """Unit tests for the memoize decorator."""
+    """Tests for memoize decorator."""
 
     def test_memoize(self):
-        """Test that memoize caches result and calls method once."""
+        """Test that memoize caches method results."""
         class TestClass:
-            """Test helper class for memoize."""
+            """Dummy class for testing memoize."""
 
             def a_method(self):
-                """Return 42."""
                 return 42
 
             @memoize
             def a_property(self):
-                """Return cached result of a_method."""
                 return self.a_method()
 
-        obj = TestClass()
-        with patch.object(obj, "a_method", return_value=42) as mock_method:
-            result1 = obj.a_property
-            result2 = obj.a_property
-
-        self.assertEqual(result1, 42)
-        self.assertEqual(result2, 42)
-        mock_method.assert_called_once()
+        with patch.object(TestClass, "a_method",
+                          return_value=42) as mock_method:
+            obj = TestClass()
+            self.assertEqual(obj.a_property, 42)
+            self.assertEqual(obj.a_property, 42)
+            mock_method.assert_called_once()
 
 
 if __name__ == "__main__":
